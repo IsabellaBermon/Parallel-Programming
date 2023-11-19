@@ -42,7 +42,6 @@ void mm(int start, int end) {
             pthread_mutex_unlock(&mutex);
         }
     }
-	
 }
 
 void *threadMultiply(void *threadid) {
