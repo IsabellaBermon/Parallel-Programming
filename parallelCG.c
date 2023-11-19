@@ -5,15 +5,17 @@
 #include <pthread.h>
 
 
-#define NUMTHRDS 8;
+int NUMTHRDS;
 typedef struct Matrix
 {
     double **a, **b, **c; 
 } Matrix;
 
 Matrix matrixQueue[256];
+pthread_mutex_t mutexQueue;
 
-int matrixSize;
+int matrixCount = 0;
+int matrixSize, nmats;
 
 double **allocateMatrix() {
 	int i;
@@ -34,15 +36,20 @@ double **allocateMatrix() {
 void mm(void) {
 	int i,j,k;
 	double sum;
+    pthread_mutex_lock(&mutexQueue);
+    Matrix m = matrixQueue[matrixCount];
+    matrixCount++;
+    pthread_mutex_unlock(&mutexQueue);
 	// matrix multiplication
 	for (i = 0; i < matrixSize; i++) {
 		for (j = 0; j < matrixSize; j++) {
 			sum = 0.0;
 			// dot product
 			for (k = 0; k < matrixSize; k++) {
-				sum = sum + a[i][k] * b[k][j];
+				sum = sum + m.a[i][k] * m.b[k][j];
 			}
-			c[i][j] = sum;
+            printf("sum: [%f]\n", sum);
+			m.c[i][j] = sum;
 		}
 	}
 }
@@ -56,12 +63,21 @@ void printResult(void){
 		printf("\n");
 	}
 }
+
 */
-void printResult(FILE *file) {
+void* startThread(void* args) {
+    while(1){
+        mm();
+        if(matrixCount == nmats){
+            pthread_exit(NULL);
+        }
+    }
+}
+void printResult(FILE *file, Matrix m) {
     int i, j;    
     for(i=0;i<matrixSize;i++){
         for(j=0;j<matrixSize;j++){
-            fprintf(file, "%lf ", c[i][j]);
+            fprintf(file, "%lf ", m.c[i][j]);
         }
         fprintf(file, "\n");
     }
@@ -69,11 +85,10 @@ void printResult(FILE *file) {
 
 int main(void) {
 	int i, j, k;
-	int nmats;
+
 	char *fname = "matrices_dev.dat"; //Change to matrices_large.dat for performance evaluation
 	//FILE *fh;
 	FILE *fh, *resultFile;
-	pthread_t threads[NUMTHRDS];
 	resultFile = fopen("CG_result.txt", "w"); // Open a file to write the result
 
 	printf("Start\n");
@@ -83,8 +98,10 @@ int main(void) {
 	fscanf(fh, "%d %d\n", &nmats, &matrixSize);
 
 	//Dynamically create matrices of the size needed
-
+    printf("Ingrese el número de hilos ( 1 a %d): ",nmats);
+    scanf("%d", &NUMTHRDS);
     
+	pthread_t threads[NUMTHRDS];
 
 	printf("Loading %d pairs of square matrices of size %d from %s...\n", nmats, matrixSize, fname);
 	for(k=0;k<nmats;k++){
@@ -115,11 +132,17 @@ int main(void) {
         pthread_create(&threads[t], NULL, startThread, NULL);
     }
 
+    for (long t = 0; t < NUMTHRDS; t++) {
+        pthread_join(threads[t], NULL);
+    }
 
+    for(long t = 0; t<nmats;t++){
+        printResult(resultFile,matrixQueue[t]);
+    }
 
 	fclose(fh);
 	fclose(resultFile); // Close the result file
-
+    pthread_mutex_destroy(&mutexQueue);
 	// Free memory
 	// free(*a);
 	// free(a);
