@@ -49,23 +49,12 @@ void mm(void) {
 			for (k = 0; k < matrixSize; k++) {
 				sum = sum + m.a[i][k] * m.b[k][j];
 			}
-            printf("sum: [%f]\n", sum);
+            // printf("sum: [%f]\n", sum);
 			m.c[i][j] = sum;
 		}
 	}
 }
-/*
-void printResult(void){
-	int i, j;	
-	for(i=0;i<matrixSize;i++){
-		for(j=0;j<matrixSize;j++){
-			printf("%lf ", c[i][j]);
-		}
-		printf("\n");
-	}
-}
 
-*/
 void* startThread(void* args) {
     while(1){
         mm();
@@ -74,6 +63,7 @@ void* startThread(void* args) {
         }
     }
 }
+
 void printResult(FILE *file, Matrix m) {
     int i, j;    
     for(i=0;i<matrixSize;i++){
@@ -83,6 +73,7 @@ void printResult(FILE *file, Matrix m) {
         fprintf(file, "\n");
     }
 }
+
 int compareFiles(FILE *file1, FILE *file2) {
     char line1[256], line2[256];
     int lineCount = 0;
@@ -101,8 +92,7 @@ int compareFiles(FILE *file1, FILE *file2) {
         }
 
         // Verificar si hemos llegado al final de ambos archivos
-        if (feof(file1) && feof(file2)) {
-           
+        if (feof(file1) && feof(file2)) {           
             return 1;  // Archivos idénticos
         } else if (feof(file1) || feof(file2)) {
             printf("Archivos de longitud diferente\n");
@@ -110,11 +100,11 @@ int compareFiles(FILE *file1, FILE *file2) {
         }
     }
 }
-int main(void) {
+int main(int argc, char *argv[]) {
 	int i, j, k;
 
 	char *fname = "matrices_large.dat"; //Change to matrices_large.dat for performance evaluation
-	//FILE *fh;
+
 	FILE *fh, *resultFile,*originalFile;
 	resultFile = fopen("CG_result.txt", "w"); // Open a file to write the result
 
@@ -124,14 +114,13 @@ int main(void) {
 	//First line indicates how many pairs of matrices there are and the matrix size
 	fscanf(fh, "%d %d\n", &nmats, &matrixSize);
 
-	//Dynamically create matrices of the size needed
-    printf("Ingrese el número de hilos ( 1 a %d): ",nmats);
-    scanf("%d", &NUMTHRDS);
+    NUMTHRDS = atoi(argv[1]);
     
 	pthread_t threads[NUMTHRDS];
 
 	printf("Loading %d pairs of square matrices of size %d from %s...\n", nmats, matrixSize, fname);
 	for(k=0;k<nmats;k++){
+        //Dynamically create matrices of the size needed
         double **a = allocateMatrix();
         double **b = allocateMatrix();
         double **c = allocateMatrix();
@@ -146,6 +135,7 @@ int main(void) {
 				fscanf(fh, "%lf", &b[i][j]);
 			}
 		}
+        // Create task of pair multiplication
         Matrix m = {
             .a = a,
             .b = b,
@@ -158,22 +148,22 @@ int main(void) {
     for (long t = 0; t < NUMTHRDS; t++) {
         pthread_create(&threads[t], NULL, startThread, NULL);
     }
-
     for (long t = 0; t < NUMTHRDS; t++) {
         pthread_join(threads[t], NULL);
     }
-
+    // Save results in file
     for(long t = 0; t<nmats;t++){
         printResult(resultFile,matrixQueue[t]);
     }
     fclose(resultFile); // Close the result file
+
+    // Check results ---------------------------------
     resultFile = fopen("CG_result.txt", "r");
     originalFile = fopen("original_result.txt", "r");
     if (resultFile == NULL || originalFile == NULL) {
         perror("Error al abrir los archivos");
         exit(EXIT_FAILURE);
     }
-
     // Comparar los archivos
     if (compareFiles(resultFile, originalFile)) {
         printf("Contenido idéntico\n");
@@ -181,17 +171,12 @@ int main(void) {
         printf("Contenido diferente\n");
     }
 
-
-	fclose(fh);
-	
+	fclose(fh);	
+    fclose(resultFile);
+    fclose(originalFile);
     pthread_mutex_destroy(&mutexQueue);
 	// Free memory
-	// free(*a);
-	// free(a);
-	// free(*b);
-	// free(b);
-	// free(*c);
-	// free(c);
+	
 	printf("Done.\n");
 	return 0;
 }
