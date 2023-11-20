@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <string.h>
 
 
 int NUMTHRDS;
@@ -82,13 +83,39 @@ void printResult(FILE *file, Matrix m) {
         fprintf(file, "\n");
     }
 }
+int compareFiles(FILE *file1, FILE *file2) {
+    char line1[256], line2[256];
+    int lineCount = 0;
 
+    while (1) {
+        // Leer una línea de cada archivo
+        fgets(line1, sizeof(line1), file1);
+        fgets(line2, sizeof(line2), file2);
+
+        // Incrementar el contador de líneas
+        lineCount++;
+
+        // Comparar las líneas
+        if (strcmp(line1, line2) != 0) {
+            return 0;  // Archivos diferentes
+        }
+
+        // Verificar si hemos llegado al final de ambos archivos
+        if (feof(file1) && feof(file2)) {
+           
+            return 1;  // Archivos idénticos
+        } else if (feof(file1) || feof(file2)) {
+            printf("Archivos de longitud diferente\n");
+            return 0;  // Archivos de longitud diferente
+        }
+    }
+}
 int main(void) {
 	int i, j, k;
 
-	char *fname = "matrices_dev.dat"; //Change to matrices_large.dat for performance evaluation
+	char *fname = "matrices_large.dat"; //Change to matrices_large.dat for performance evaluation
 	//FILE *fh;
-	FILE *fh, *resultFile;
+	FILE *fh, *resultFile,*originalFile;
 	resultFile = fopen("CG_result.txt", "w"); // Open a file to write the result
 
 	printf("Start\n");
@@ -139,9 +166,24 @@ int main(void) {
     for(long t = 0; t<nmats;t++){
         printResult(resultFile,matrixQueue[t]);
     }
+    fclose(resultFile); // Close the result file
+    resultFile = fopen("CG_result.txt", "r");
+    originalFile = fopen("original_result.txt", "r");
+    if (resultFile == NULL || originalFile == NULL) {
+        perror("Error al abrir los archivos");
+        exit(EXIT_FAILURE);
+    }
+
+    // Comparar los archivos
+    if (compareFiles(resultFile, originalFile)) {
+        printf("Contenido idéntico\n");
+    } else {
+        printf("Contenido diferente\n");
+    }
+
 
 	fclose(fh);
-	fclose(resultFile); // Close the result file
+	
     pthread_mutex_destroy(&mutexQueue);
 	// Free memory
 	// free(*a);

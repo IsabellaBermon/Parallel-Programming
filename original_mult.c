@@ -58,10 +58,11 @@ void printResult(FILE *file) {
     }
 }
 
+
 int main(void) {
 	int i, j, k;
 	int nmats;
-	char *fname = "matrices_dev.dat"; //Change to matrices_large.dat for performance evaluation
+	char *fname = "matrices_large.dat"; //Change to matrices_large.dat for performance evaluation
 	//FILE *fh;
 	FILE *fh, *resultFile;
 	
