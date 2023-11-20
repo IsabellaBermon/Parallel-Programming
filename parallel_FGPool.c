@@ -237,14 +237,14 @@ int main(int argc, char *argv[]) {
     pthread_cond_destroy(&condQueue);
 
     // // Free memory
-    // for (int i = 0; i < matrixSize; i++) {
-    //     free(a[i]);
-    //     free(b[i]);
-    //     free(c[i]);
-    // }
-    // free(a);
-    // free(b);
-    // free(c);
+
+    free(*a);
+    free(*b);
+    free(*c);
+    
+    free(a);
+    free(b);
+    free(c);
 
     printf("Done.\n");
     return 0;
