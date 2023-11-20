@@ -1,1 +1,7 @@
-parallelCG
+pCG
+pFG
+original
+
+original_result.txt
+CG_result.txt
+FG_result.txt

@@ -34,6 +34,11 @@ double **allocateMatrix() {
 	return temp;
 }
 
+void freeMatrix(double **matrix) {
+    free(matrix[0]);  // Free the memory block that contains the matrix values
+    free(matrix);      // Free the array of pointers
+}
+
 void mm(void) {
 	int i,j,k;
 	double sum;
@@ -174,9 +179,15 @@ int main(int argc, char *argv[]) {
 	fclose(fh);	
     fclose(resultFile);
     fclose(originalFile);
+
+    // Free memory for each matrix in the matrixQueue
+    for (int t = 0; t < nmats; t++) {
+        freeMatrix(matrixQueue[t].a);
+        freeMatrix(matrixQueue[t].b);
+        freeMatrix(matrixQueue[t].c);
+    }
     pthread_mutex_destroy(&mutexQueue);
-	// Free memory
-	
+
 	printf("Done.\n");
 	return 0;
 }
