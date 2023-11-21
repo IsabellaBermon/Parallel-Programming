@@ -92,7 +92,7 @@ int main(void) {
 			}
 		}
 		// fprintf(resultFile,"Multiplying two matrices...\n");
-		printf("Multiplying two matrices...\n"); //Remove this line for performance tests
+		// printf("Multiplying two matrices...\n"); //Remove this line for performance tests
 		mm();
 		printResult(resultFile); // Write result to file
 		//printResult(); //Remove this line for performance tests

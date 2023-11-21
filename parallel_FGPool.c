@@ -1,3 +1,4 @@
+// Matrix multiplication
 
 #include <stdio.h>
 #include <pthread.h>
@@ -36,6 +37,7 @@ double **allocateMatrix() {
 
 	return temp;
 }
+
 void submitTask(MatrixMultiplyTask task) {
     pthread_mutex_lock(&mutexQueue);
     taskQueue[taskCount] = task;
@@ -55,7 +57,6 @@ void mm(int start, int end) {
                 sum = sum + a[i][k] * b[k][j];
                 
             }
-            // printf("sum: [%f]\n", sum);
             pthread_mutex_lock(&mutex);
             c[i][j] = sum;
             pthread_mutex_unlock(&mutex);
@@ -70,13 +71,12 @@ void* startThread(void* args) {
 
         pthread_mutex_lock(&mutexQueue);
         while (taskCount == 0 && !end) {
+            printf("Thread waiting for tasks...\n");
             pthread_cond_wait(&condQueue, &mutexQueue);
-          
-
         }
         if (end) {
+            printf("Thread received exit signal, exiting...\n");
             pthread_mutex_unlock(&mutexQueue);
-
             pthread_exit(NULL);
         }
 
@@ -88,16 +88,13 @@ void* startThread(void* args) {
         taskCount--;
         pthread_mutex_unlock(&mutexQueue);
 
-           
-
         mm(task.start, task.end);
         pthread_mutex_lock(&mutex);
         checkMultiply++;
         pthread_mutex_unlock(&mutex);
-
     }
-
 }
+
 void printResult(FILE *file) {
     int i, j;
     for (i = 0; i < matrixSize; i++) {
@@ -129,7 +126,7 @@ int compareFiles(FILE *file1, FILE *file2) {
         if (feof(file1) && feof(file2)) {           
             return 1;  // Archivos idénticos
         } else if (feof(file1) || feof(file2)) {
-            printf("Archivos de longitud diferente\n");
+            //printf("Archivos de longitud diferente\n");
             return 0;  // Archivos de longitud diferente
         }
     }
@@ -138,18 +135,12 @@ int compareFiles(FILE *file1, FILE *file2) {
 int main(int argc, char *argv[]) {
 
     NUMTHRDS = atoi(argv[1]);
-  
-    
-
     pthread_t threads[NUMTHRDS];
-    // pthread_mutex_init(&mutex, NULL);
     pthread_mutex_init(&mutexQueue, NULL);
     pthread_cond_init(&condQueue, NULL);
 
-    char *fname = "matrices_large.dat"; //Change to matrices_large.dat for performance evaluation
+    char *fname = "matrices_large.dat"; 
     FILE *fh, *resultFile,*originalFile;
-
-
     resultFile = fopen("FG_result.txt", "w"); // Open a file to write the result
 	//printf("Start\n");
 	fh = fopen(fname, "r");
@@ -157,7 +148,7 @@ int main(int argc, char *argv[]) {
     // First line indicates how many pairs of matrices there are and the matrix size
     fscanf(fh, "%d %d", &nmats, &matrixSize);
 
-    //Dynamically create matrices of the size needed
+    // Dynamically create matrices of the size needed
 	a = allocateMatrix();
 	b = allocateMatrix();
 	c = allocateMatrix();
@@ -214,32 +205,30 @@ int main(int argc, char *argv[]) {
    // Write result to file
     // fclose(resultFile); // Close the result file
 
-    // // Check results ---------------------------------
-    // resultFile = fopen("FG_result.txt", "r");
-    // originalFile = fopen("original_result.txt", "r");
-    // if (resultFile == NULL || originalFile == NULL) {
-    //     perror("Error al abrir los archivos");
-    //     exit(EXIT_FAILURE);
-    // }
-    // // Comparar los archivos
-    // if (compareFiles(resultFile, originalFile)) {
-    //     printf("Contenido idéntico\n");
-    // } else {
-    //     printf("Contenido diferente\n");
-    // }
+    // Check results ---------------------------------
+    resultFile = fopen("FG_result.txt", "r");
+    originalFile = fopen("original_result.txt", "r");
+    if (resultFile == NULL || originalFile == NULL) {
+        perror("Error al abrir los archivos");
+        exit(EXIT_FAILURE);
+    }
+    // Comparar los archivos
+    if (compareFiles(resultFile, originalFile)) {
+        printf("Contenido idéntico\n");
+    } else {
+        printf("Contenido diferente\n");
+    }
 
     fclose(fh);
-    fclose(resultFile); // Close the result file
+    
     pthread_mutex_destroy(&mutex);
     pthread_mutex_destroy(&mutexQueue);
     pthread_cond_destroy(&condQueue);
 
-    // // Free memory
-
+    // Free memory
     free(*a);
     free(*b);
-    free(*c);
-    
+    free(*c);    
     free(a);
     free(b);
     free(c);
