@@ -9,17 +9,31 @@ class Matrix(ctypes.Structure):
     _fields_ = [("a", ctypes.POINTER(ctypes.POINTER(ctypes.c_double))),
                 ("b", ctypes.POINTER(ctypes.POINTER(ctypes.c_double))),
                 ("c", ctypes.POINTER(ctypes.POINTER(ctypes.c_double)))]
-    
 # Define C data 
 cmm.mm.restype = None
 cmm.mm.argtypes = [Matrix, ctypes.c_int]
 cmm.printResult.restype = None
 cmm.printResult.argtypes = [Matrix, ctypes.c_int]
 
+numthreads =32
 nmats = 0
 matrixSize = 0
 matrixQueue =[]
-with open("matrices_dev.dat",'r') as file:
+matrixCount = 0
+lock = threading.Lock()
+def startThread():
+    global matrixCount
+    while(True):
+        with lock:
+            if(matrixCount <len(matrixQueue)):
+                m = matrixQueue[matrixCount]
+                matrixCount+=1
+            else:
+                break    
+        cmm.mm(m, matrixSize)
+        
+
+with open("matrices_large.dat",'r') as file:
     line = file.readline()
     nmats = int(line.split()[0])
     matrixSize = int(line.split()[1])
@@ -61,11 +75,26 @@ with open("matrices_dev.dat",'r') as file:
         matrix_struct = Matrix(a_c, b_c, c_c)
         matrixQueue.append(matrix_struct)
 
-print("Número de matrices",len(matrixQueue))
 
-# Call C function mm
-for w in range(len(matrixQueue)):
-    cmm.mm(matrixQueue[w], matrixSize)
+#Vamos a crear los hilos
+
+#Se inicializan los hilos
+
+#Se espera a que terminen
+threads = []
+for _ in range(numthreads):
+    thread = threading.Thread(target=startThread)
+    threads.append(thread)
+
+# Iniciar hilos
+for hilo in threads:
+    hilo.start()
+
+# Esperar a que todos los hilos terminen (opcional)
+for hilo in threads:
+    hilo.join()
+
+
 # Inicializar una matriz para almacenar los resultados concatenados
 result_matrix_c_combined = np.zeros((len(matrixQueue) * matrixSize, matrixSize), dtype=np.float64)
 
