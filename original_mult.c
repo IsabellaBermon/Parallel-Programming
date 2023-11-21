@@ -62,7 +62,7 @@ void printResult(FILE *file) {
 int main(void) {
 	int i, j, k;
 	int nmats;
-	char *fname = "matrices_dev.dat"; //Change to matrices_large.dat for performance evaluation
+	char *fname = "matrices_large.dat"; //Change to matrices_large.dat for performance evaluation
 	//FILE *fh;
 	FILE *fh, *resultFile;
 	
@@ -92,7 +92,7 @@ int main(void) {
 			}
 		}
 		// fprintf(resultFile,"Multiplying two matrices...\n");
-		printf("Multiplying two matrices...\n"); //Remove this line for performance tests
+		// printf("Multiplying two matrices...\n"); //Remove this line for performance tests
 		mm();
 		printResult(resultFile); // Write result to file
 		//printResult(); //Remove this line for performance tests

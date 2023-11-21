@@ -38,16 +38,3 @@ void mm(Matrix m, int matrixSize) {
 	}
 
 }
-
-void printResult(Matrix m,int matrixSize) {
-    FILE *resultFile;
-	resultFile = fopen("CG_python.txt", "w"); 
-    int i, j;    
-    for(i=0;i<matrixSize;i++){
-        for(j=0;j<matrixSize;j++){
-            fprintf(resultFile, "%lf ", m.c[i][j]);
-        }
-        fprintf(resultFile, "\n");
-    }
-    
-}

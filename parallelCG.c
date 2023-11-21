@@ -5,7 +5,6 @@
 #include <pthread.h>
 #include <string.h>
 
-
 int NUMTHRDS;
 typedef struct Matrix
 {
@@ -100,36 +99,32 @@ int compareFiles(FILE *file1, FILE *file2) {
         if (feof(file1) && feof(file2)) {           
             return 1;  // Archivos idénticos
         } else if (feof(file1) || feof(file2)) {
-            printf("Archivos de longitud diferente\n");
+            //printf("Archivos de longitud diferente\n");
             return 0;  // Archivos de longitud diferente
         }
     }
 }
+
 int main(int argc, char *argv[]) {
 	int i, j, k;
+    NUMTHRDS = atoi(argv[1]);    
+	pthread_t threads[NUMTHRDS];
 
-	char *fname = "matrices_large.dat"; //Change to matrices_large.dat for performance evaluation
-
+	char *fname = "matrices_large.dat"; 
 	FILE *fh, *resultFile,*originalFile;
 	resultFile = fopen("CG_result.txt", "w"); // Open a file to write the result
-
-	printf("Start\n");
+	//printf("Start\n");
 	fh = fopen(fname, "r");
 
 	//First line indicates how many pairs of matrices there are and the matrix size
-	fscanf(fh, "%d %d\n", &nmats, &matrixSize);
+	fscanf(fh, "%d %d\n", &nmats, &matrixSize);    
 
-    NUMTHRDS = atoi(argv[1]);
-    
-	pthread_t threads[NUMTHRDS];
-
-	printf("Loading %d pairs of square matrices of size %d from %s...\n", nmats, matrixSize, fname);
+	//printf("Loading %d pairs of square matrices of size %d from %s...\n", nmats, matrixSize, fname);
 	for(k=0;k<nmats;k++){
         //Dynamically create matrices of the size needed
         double **a = allocateMatrix();
         double **b = allocateMatrix();
         double **c = allocateMatrix();
-
 		for(i=0;i<matrixSize;i++){
 			for(j=0;j<matrixSize;j++){
 				fscanf(fh, "%lf", &a[i][j]);
@@ -153,32 +148,37 @@ int main(int argc, char *argv[]) {
     for (long t = 0; t < NUMTHRDS; t++) {
         pthread_create(&threads[t], NULL, startThread, NULL);
     }
+
+    // Join threads
     for (long t = 0; t < NUMTHRDS; t++) {
         pthread_join(threads[t], NULL);
     }
+
     // Save results in file
     for(long t = 0; t<nmats;t++){
         printResult(resultFile,matrixQueue[t]);
     }
+
     fclose(resultFile); // Close the result file
 
-    // Check results ---------------------------------
-    resultFile = fopen("CG_result.txt", "r");
-    originalFile = fopen("original_result.txt", "r");
-    if (resultFile == NULL || originalFile == NULL) {
-        perror("Error al abrir los archivos");
-        exit(EXIT_FAILURE);
-    }
-    // Comparar los archivos
-    if (compareFiles(resultFile, originalFile)) {
-        printf("Contenido idéntico\n");
-    } else {
-        printf("Contenido diferente\n");
-    }
+    // // Check results ---------------------------------
+    // resultFile = fopen("CG_result.txt", "r");
+    // originalFile = fopen("original_result.txt", "r");
+    // if (resultFile == NULL || originalFile == NULL) {
+    //     perror("Error al abrir los archivos");
+    //     exit(EXIT_FAILURE);
+    // }
+    // // Comparar los archivos
+    // if (compareFiles(resultFile, originalFile)) {
+    //     printf("Contenido idéntico\n");
+    // } else {
+    //     printf("Contenido diferente\n");
+    // }
+    // fclose(resultFile);
+    // fclose(originalFile);
+    // // -----------------------------------------------
 
 	fclose(fh);	
-    fclose(resultFile);
-    fclose(originalFile);
 
     // Free memory for each matrix in the matrixQueue
     for (int t = 0; t < nmats; t++) {
@@ -188,6 +188,6 @@ int main(int argc, char *argv[]) {
     }
     pthread_mutex_destroy(&mutexQueue);
 
-	printf("Done.\n");
+	//printf("Done.\n");
 	return 0;
 }
