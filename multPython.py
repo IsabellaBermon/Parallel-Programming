@@ -4,23 +4,17 @@ import numpy as np
 
 cmm = ctypes.CDLL("./mm.so")
 
-# Definir la estructura Matrix
+# Define Matrix structure
 class Matrix(ctypes.Structure):
     _fields_ = [("a", ctypes.POINTER(ctypes.POINTER(ctypes.c_double))),
                 ("b", ctypes.POINTER(ctypes.POINTER(ctypes.c_double))),
                 ("c", ctypes.POINTER(ctypes.POINTER(ctypes.c_double)))]
+    
+# Define C data 
 cmm.mm.restype = None
 cmm.mm.argtypes = [Matrix, ctypes.c_int]
-
 cmm.printResult.restype = None
 cmm.printResult.argtypes = [Matrix, ctypes.c_int]
-# Función para convertir una matriz de NumPy a una estructura Matrix de ctypes
-
-
-# Convertir matrices de numpy a matrices de C
-
-
-
 
 nmats = 0
 matrixSize = 0
@@ -38,33 +32,40 @@ with open("matrices_dev.dat",'r') as file:
             rows.append(list(map(np.float64, line.split())))
 
         a = np.array(rows,dtype=np.float64)    
+        # print("A ",a)
         rows.clear()
         for _ in range(matrixSize):
             line = file.readline()
             rows.append(list(map(np.float64, line.split())))
-        b = np.array(rows,dtype=np.float64)    
+        b = np.array(rows,dtype=np.float64)  
+        # print("B ",b)
         rows.clear()
-        # Convertir matrices de numpy a matrices de C
  
+        # Convert matrices from numpy to matrices of C-compatible arrays
         a_c = (ctypes.POINTER(ctypes.c_double) * matrixSize)()
         b_c = (ctypes.POINTER(ctypes.c_double) * matrixSize)()
         c_c = (ctypes.POINTER(ctypes.c_double) * matrixSize)()
+
         for m in range(matrixSize):
-            a_c[m] = a[m].ctypes.data_as(ctypes.POINTER(ctypes.c_double))
-            b_c[m] = b[m].ctypes.data_as(ctypes.POINTER(ctypes.c_double))
-            c_c[m] = c[m].ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+            # Allocate memory for each row
+            a_c[m] = (ctypes.c_double * matrixSize)()
+            b_c[m] = (ctypes.c_double * matrixSize)()
+            c_c[m] = (ctypes.c_double * matrixSize)()
+
+            # Copy values from numpy arrays to C-compatible arrays
+            for i in range(matrixSize):
+                a_c[m][i] = a[m][i]  
+                b_c[m][i] = b[m][i]   
+                c_c[m][i] = ctypes.c_double() # Initialize c_c[m][i] as zeros
+
         matrix_struct = Matrix(a_c, b_c, c_c)
         matrixQueue.append(matrix_struct)
 
+print("Número de matrices",len(matrixQueue))
 
-print("tamaño",len(matrixQueue))
-# # Crear la estructura Matrix
-# matrix_struct = Matrix(a_c, b_c, c_c)
-
-# # Llamar a la función mm
+# Call C function mm
 for w in range(len(matrixQueue)):
     cmm.mm(matrixQueue[w], matrixSize)
-    #cmm.printResult(matrixQueue[w], matrixSize)
 # Inicializar una matriz para almacenar los resultados concatenados
 result_matrix_c_combined = np.zeros((len(matrixQueue) * matrixSize, matrixSize), dtype=np.float64)
 
@@ -75,10 +76,6 @@ for w in range(len(matrixQueue)):
             result_matrix_c_combined[w * matrixSize + i, j] = matrixQueue[w].c[i][j]
 
 # Guardar la matriz combinada en un solo archivo
-result_filename_combined = "result_combined.txt"
+result_filename_combined = "python_result.txt"
 np.savetxt(result_filename_combined, result_matrix_c_combined, fmt="%lf", delimiter=" ")
-print(f"Combined result saved to {result_filename_combined}")
-# # Imprimir el resultado
-
-# print("Matrix C:")
-# print(c)
+print(f"Result saved to {result_filename_combined}")

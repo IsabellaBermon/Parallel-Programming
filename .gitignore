@@ -1,7 +1,11 @@
+# C objects
 pCG
 pFG
 original
+mm.o
 
+# .txt
 original_result.txt
 CG_result.txt
 FG_result.txt
+python_result.txt

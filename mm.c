@@ -8,7 +8,22 @@ typedef struct Matrix
 void mm(Matrix m, int matrixSize) {
 	int i,j,k;
 	double sum;
-
+	// // Print matrix A
+    // printf("Matrix A:\n");
+    // for (i = 0; i < matrixSize; i++) {
+    //     for (j = 0; j < matrixSize; j++) {
+    //         printf("%lf ", m.a[i][j]);
+    //     }
+    //     printf("\n");
+    // }
+    // // Print matrix B
+    // printf("Matrix B:\n");
+    // for (i = 0; i < matrixSize; i++) {
+    //     for (j = 0; j < matrixSize; j++) {
+    //         printf("%lf ", m.b[i][j]);
+    //     }
+    //     printf("\n");
+    // }
 	// matrix multiplication
 	for (i = 0; i < matrixSize; i++) {
 		for (j = 0; j < matrixSize; j++) {

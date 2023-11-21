@@ -15,3 +15,7 @@ gcc -pthread -o parallel_CG parallel_CG.c
 gcc -pthread -o parallel_FG parallel_FG.c
 ./parallel_FG
 -> genera : FG_result
+
+# Compilar C para python
+gcc -c -fPIC mm.c -o mm.o
+gcc -shared mm.o -o mm.so
