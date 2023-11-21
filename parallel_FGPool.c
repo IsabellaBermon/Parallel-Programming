@@ -40,7 +40,7 @@ void submitTask(MatrixMultiplyTask task) {
     pthread_mutex_lock(&mutexQueue);
     taskQueue[taskCount] = task;
     taskCount++;
-    printf("Task submitted: [%d, %d], taskCount: %d\n", task.start, task.end, taskCount);
+    //printf("Task submitted: [%d, %d], taskCount: %d\n", task.start, task.end, taskCount);
     pthread_mutex_unlock(&mutexQueue);
     pthread_cond_signal(&condQueue);
 }
@@ -70,13 +70,11 @@ void* startThread(void* args) {
 
         pthread_mutex_lock(&mutexQueue);
         while (taskCount == 0 && !end) {
-            printf("Thread waiting for tasks...\n");
             pthread_cond_wait(&condQueue, &mutexQueue);
           
 
         }
         if (end) {
-            printf("Thread received exit signal, exiting...\n");
             pthread_mutex_unlock(&mutexQueue);
 
             pthread_exit(NULL);
@@ -153,7 +151,7 @@ int main(int argc, char *argv[]) {
 
 
     resultFile = fopen("FG_result.txt", "w"); // Open a file to write the result
-	printf("Start\n");
+	//printf("Start\n");
 	fh = fopen(fname, "r");
 
     // First line indicates how many pairs of matrices there are and the matrix size
@@ -214,21 +212,21 @@ int main(int argc, char *argv[]) {
     }
 
    // Write result to file
-    fclose(resultFile); // Close the result file
+    // fclose(resultFile); // Close the result file
 
-    // Check results ---------------------------------
-    resultFile = fopen("FG_result.txt", "r");
-    originalFile = fopen("original_result.txt", "r");
-    if (resultFile == NULL || originalFile == NULL) {
-        perror("Error al abrir los archivos");
-        exit(EXIT_FAILURE);
-    }
-    // Comparar los archivos
-    if (compareFiles(resultFile, originalFile)) {
-        printf("Contenido idéntico\n");
-    } else {
-        printf("Contenido diferente\n");
-    }
+    // // Check results ---------------------------------
+    // resultFile = fopen("FG_result.txt", "r");
+    // originalFile = fopen("original_result.txt", "r");
+    // if (resultFile == NULL || originalFile == NULL) {
+    //     perror("Error al abrir los archivos");
+    //     exit(EXIT_FAILURE);
+    // }
+    // // Comparar los archivos
+    // if (compareFiles(resultFile, originalFile)) {
+    //     printf("Contenido idéntico\n");
+    // } else {
+    //     printf("Contenido diferente\n");
+    // }
 
     fclose(fh);
     fclose(resultFile); // Close the result file
@@ -246,6 +244,6 @@ int main(int argc, char *argv[]) {
     free(b);
     free(c);
 
-    printf("Done.\n");
+    //printf("Done.\n");
     return 0;
 }

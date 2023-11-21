@@ -1,0 +1,16 @@
+Valor de num: 1
+Valor más pequeño: 0m0.813s
+----------------------------------------
+Valor de num: 2
+Valor más pequeño: 0m0.749s
+----------------------------------------
+Valor de num: 3
+Valor más pequeño: 0m0.725s
+----------------------------------------
+Valor de num: 4
+Valor más pequeño: 0m0.761s
+----------------------------------------
+Valor de num: 5
+Valor más pequeño: 0m0.744s
+----------------------------------------
+Valor de num: 6

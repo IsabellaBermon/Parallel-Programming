@@ -84,7 +84,7 @@ int main(void) {
 	b = allocateMatrix();
 	c = allocateMatrix();
 
-	printf("Loading %d pairs of square matrices of size %d from %s...\n", nmats, matrixSize, fname);
+	// printf("Loading %d pairs of square matrices of size %d from %s...\n", nmats, matrixSize, fname);
 	for(k=0;k<nmats;k++){
 		for(i=0;i<matrixSize;i++){
 			for(j=0;j<matrixSize;j++){
