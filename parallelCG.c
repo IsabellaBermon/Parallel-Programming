@@ -38,14 +38,10 @@ void freeMatrix(double **matrix) {
     free(matrix);      // Free the array of pointers
 }
 
-void mm(void) {
+void mm(Matrix m) {
 	int i,j,k;
 	double sum;
-    pthread_mutex_lock(&mutexQueue);
-    Matrix m = matrixQueue[matrixCount];
-    matrixCount++;
-    pthread_mutex_unlock(&mutexQueue);
-	// matrix multiplication
+  
 	for (i = 0; i < matrixSize; i++) {
 		for (j = 0; j < matrixSize; j++) {
 			sum = 0.0;
@@ -53,7 +49,7 @@ void mm(void) {
 			for (k = 0; k < matrixSize; k++) {
 				sum = sum + m.a[i][k] * m.b[k][j];
 			}
-            // printf("sum: [%f]\n", sum);
+            //printf("sum: [%f]\n", sum);
 			m.c[i][j] = sum;
 		}
 	}
@@ -61,10 +57,20 @@ void mm(void) {
 
 void* startThread(void* args) {
     while(1){
-        mm();
-        if(matrixCount == nmats){
+        Matrix m;
+        pthread_mutex_lock(&mutexQueue);
+        if(matrixCount < nmats){
+            m = matrixQueue[matrixCount];
+            matrixCount++;
+        }else{
+            pthread_mutex_unlock(&mutexQueue);
+
             pthread_exit(NULL);
         }
+        pthread_mutex_unlock(&mutexQueue);
+	// matrix multiplication
+        mm(m);
+        
     }
 }
 
