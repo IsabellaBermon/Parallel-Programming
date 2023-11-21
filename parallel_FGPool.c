@@ -1,16 +1,15 @@
-// Matrix multiplication
 
 #include <stdio.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
-
 typedef struct MatrixMultiplyTask {
     int start, end;
 } MatrixMultiplyTask;
 
 MatrixMultiplyTask taskQueue[256];
 int taskCount = 0;
+
 pthread_mutex_t mutexQueue;
 pthread_cond_t condQueue;
 
@@ -25,13 +24,10 @@ int end =0;
 double **allocateMatrix() {
 	int i;
 	double *vals, **temp;
-
 	// allocate space for values of a matrix
 	vals = (double *) malloc (matrixSize * matrixSize * sizeof(double));
-
 	// allocate vector of pointers to create the 2D array
 	temp = (double **) malloc (matrixSize * sizeof(double*));
-
 	for(i=0; i < matrixSize; i++)
 		temp[i] = &(vals[i * matrixSize]);
 
@@ -42,7 +38,6 @@ void submitTask(MatrixMultiplyTask task) {
     pthread_mutex_lock(&mutexQueue);
     taskQueue[taskCount] = task;
     taskCount++;
-    //printf("Task submitted: [%d, %d], taskCount: %d\n", task.start, task.end, taskCount);
     pthread_mutex_unlock(&mutexQueue);
     pthread_cond_signal(&condQueue);
 }
@@ -55,7 +50,7 @@ void mm(int start, int end) {
             sum = 0.0;
             for (k = 0; k < matrixSize; k++) {
                 sum = sum + a[i][k] * b[k][j];
-                
+
             }
             pthread_mutex_lock(&mutex);
             c[i][j] = sum;
@@ -71,11 +66,9 @@ void* startThread(void* args) {
 
         pthread_mutex_lock(&mutexQueue);
         while (taskCount == 0 && !end) {
-            printf("Thread waiting for tasks...\n");
             pthread_cond_wait(&condQueue, &mutexQueue);
         }
         if (end) {
-            printf("Thread received exit signal, exiting...\n");
             pthread_mutex_unlock(&mutexQueue);
             pthread_exit(NULL);
         }
@@ -87,11 +80,11 @@ void* startThread(void* args) {
         }
         taskCount--;
         pthread_mutex_unlock(&mutexQueue);
-
         mm(task.start, task.end);
         pthread_mutex_lock(&mutex);
         checkMultiply++;
         pthread_mutex_unlock(&mutex);
+
     }
 }
 
@@ -108,25 +101,21 @@ void printResult(FILE *file) {
 int compareFiles(FILE *file1, FILE *file2) {
     char line1[256], line2[256];
     int lineCount = 0;
-
     while (1) {
         // Leer una línea de cada archivo
         fgets(line1, sizeof(line1), file1);
         fgets(line2, sizeof(line2), file2);
-
         // Incrementar el contador de líneas
         lineCount++;
-
         // Comparar las líneas
         if (strcmp(line1, line2) != 0) {
             return 0;  // Archivos diferentes
         }
-
         // Verificar si hemos llegado al final de ambos archivos
         if (feof(file1) && feof(file2)) {           
             return 1;  // Archivos idénticos
         } else if (feof(file1) || feof(file2)) {
-            //printf("Archivos de longitud diferente\n");
+            // printf("Archivos de longitud diferente\n");
             return 0;  // Archivos de longitud diferente
         }
     }
@@ -141,8 +130,8 @@ int main(int argc, char *argv[]) {
 
     char *fname = "matrices_large.dat"; 
     FILE *fh, *resultFile,*originalFile;
+
     resultFile = fopen("FG_result.txt", "w"); // Open a file to write the result
-	//printf("Start\n");
 	fh = fopen(fname, "r");
 
     // First line indicates how many pairs of matrices there are and the matrix size
@@ -152,12 +141,10 @@ int main(int argc, char *argv[]) {
 	a = allocateMatrix();
 	b = allocateMatrix();
 	c = allocateMatrix();
-
     // Create threads and execute matrix multiplication in parallel
     for (long t = 0; t < NUMTHRDS; t++) {
         pthread_create(&threads[t], NULL, startThread, NULL);
     }
-
     // Read matrices from file
     for (int k = 0; k < nmats; k++) {
         for (int i = 0; i < matrixSize; i++) {
@@ -170,7 +157,6 @@ int main(int argc, char *argv[]) {
                 fscanf(fh, "%lf", &b[i][j]);
             }
         }        
-
         // Split matrix multiplication into tasks and submit to the queue
         int chunk_size = matrixSize / NUMTHRDS;
         for (long t = 0; t < NUMTHRDS; t++) {
@@ -189,8 +175,6 @@ int main(int argc, char *argv[]) {
         }
         printResult(resultFile); 
     }
-
-
     for(int k = 0; k< NUMTHRDS; k++){
         taskCount = 0;
         end = 1;
@@ -201,26 +185,28 @@ int main(int argc, char *argv[]) {
     for (long t = 0; t < NUMTHRDS; t++) {
         pthread_join(threads[t], NULL);
     }
-
    // Write result to file
-    // fclose(resultFile); // Close the result file
+    fclose(resultFile); // Close the result file
 
-    // Check results ---------------------------------
-    resultFile = fopen("FG_result.txt", "r");
-    originalFile = fopen("original_result.txt", "r");
-    if (resultFile == NULL || originalFile == NULL) {
-        perror("Error al abrir los archivos");
-        exit(EXIT_FAILURE);
-    }
-    // Comparar los archivos
-    if (compareFiles(resultFile, originalFile)) {
-        printf("Contenido idéntico\n");
-    } else {
-        printf("Contenido diferente\n");
-    }
+    // // Check results ---------------------------------
+    // resultFile = fopen("FG_result.txt", "r");
+    // originalFile = fopen("original_result.txt", "r");
+    // if (resultFile == NULL || originalFile == NULL) {
+    //     perror("Error al abrir los archivos");
+    //     exit(EXIT_FAILURE);
+    // }
+    // // Comparar los archivos
+    // if (compareFiles(resultFile, originalFile)) {
+    //     printf("Contenido idéntico\n");
+    // } else {
+    //     printf("Contenido diferente\n");
+    // }
+    // fclose(resultFile);
+    // fclose(originalFile);
+    // // -----------------------------------------------
 
     fclose(fh);
-    
+
     pthread_mutex_destroy(&mutex);
     pthread_mutex_destroy(&mutexQueue);
     pthread_cond_destroy(&condQueue);
@@ -228,11 +214,10 @@ int main(int argc, char *argv[]) {
     // Free memory
     free(*a);
     free(*b);
-    free(*c);    
+    free(*c); 
     free(a);
     free(b);
     free(c);
 
-    //printf("Done.\n");
     return 0;
 }

@@ -1,6 +1,7 @@
 import threading
 import ctypes
 import numpy as np
+import sys
 
 cmm = ctypes.CDLL("./mm.so")
 
@@ -15,7 +16,7 @@ cmm.mm.argtypes = [Matrix, ctypes.c_int]
 cmm.printResult.restype = None
 cmm.printResult.argtypes = [Matrix, ctypes.c_int]
 
-numthreads =32
+numthreads = int(sys.argv[1])
 nmats = 0
 matrixSize = 0
 matrixQueue =[]
@@ -95,16 +96,16 @@ for hilo in threads:
     hilo.join()
 
 
-# Inicializar una matriz para almacenar los resultados concatenados
-result_matrix_c_combined = np.zeros((len(matrixQueue) * matrixSize, matrixSize), dtype=np.float64)
+# # Inicializar una matriz para almacenar los resultados concatenados
+# result_matrix_c_combined = np.zeros((len(matrixQueue) * matrixSize, matrixSize), dtype=np.float64)
 
-# Copiar los valores de cada matriz c de ctypes a la matriz combinada
-for w in range(len(matrixQueue)):
-    for i in range(matrixSize):
-        for j in range(matrixSize):
-            result_matrix_c_combined[w * matrixSize + i, j] = matrixQueue[w].c[i][j]
+# # Copiar los valores de cada matriz c de ctypes a la matriz combinada
+# for w in range(len(matrixQueue)):
+#     for i in range(matrixSize):
+#         for j in range(matrixSize):
+#             result_matrix_c_combined[w * matrixSize + i, j] = matrixQueue[w].c[i][j]
 
-# Guardar la matriz combinada en un solo archivo
-result_filename_combined = "python_result.txt"
-np.savetxt(result_filename_combined, result_matrix_c_combined, fmt="%lf", delimiter=" ")
-print(f"Result saved to {result_filename_combined}")
+# # Guardar la matriz combinada en un solo archivo
+# result_filename_combined = "python_result.txt"
+# np.savetxt(result_filename_combined, result_matrix_c_combined, fmt="%lf", delimiter=" ")
+# print(f"Result saved to {result_filename_combined}")

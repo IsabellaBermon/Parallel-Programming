@@ -118,7 +118,7 @@ int main(int argc, char *argv[]) {
 
 	char *fname = "matrices_large.dat"; 
 	FILE *fh, *resultFile,*originalFile;
-	resultFile = fopen("CG_result.txt", "w"); // Open a file to write the result
+	// resultFile = fopen("CG_result.txt", "w"); // Open a file to write the result
 	//printf("Start\n");
 	fh = fopen(fname, "r");
 
@@ -160,12 +160,12 @@ int main(int argc, char *argv[]) {
         pthread_join(threads[t], NULL);
     }
 
-    // Save results in file
-    for(long t = 0; t<nmats;t++){
-        printResult(resultFile,matrixQueue[t]);
-    }
+    // // Save results in file
+    // for(long t = 0; t<nmats;t++){
+    //     printResult(resultFile,matrixQueue[t]);
+    // }
 
-    fclose(resultFile); // Close the result file
+    // fclose(resultFile); // Close the result file
 
     // // Check results ---------------------------------
     // resultFile = fopen("CG_result.txt", "r");

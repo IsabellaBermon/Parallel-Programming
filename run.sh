@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Nombre del archivo de salida
-output_file="salida_total.txt"
+output_file="salida_total2.txt"
 # Número de veces que se ejecutará cada valor
 num_iterations=20
 
@@ -18,7 +18,7 @@ do
     for ((i=1; i<=$num_iterations; i++))
     do
         # Ejecuta el comando y filtra la salida para obtener el valor "real"
-        current_time=$( { time ./pFG $num; } 2>&1 | grep "real" | awk '{print $2}' )
+        current_time=$( { time python3 multPython.py $num; } 2>&1 | grep "real" | awk '{print $2}' )
 
         # Compara con el valor más pequeño hasta el momento
         if [[ "$current_time" < "$min_time" ]]; then
