@@ -7,15 +7,22 @@ typedef struct MatrixMultiplyTask {
     int start, end;
 } MatrixMultiplyTask;
 
+typedef struct MatrixResult
+{
+    double **a, **b,**c;
+}MatrixResult;
+
+
 MatrixMultiplyTask taskQueue[256];
+MatrixResult taskResult[256];
 int taskCount = 0;
 
+
+pthread_mutex_t mutex;
 pthread_mutex_t mutexQueue;
 pthread_cond_t condQueue;
 
-double **a, **b, **c;
 int matrixSize, nmats;
-pthread_mutex_t mutex;
 
 int NUMTHRDS= 2;
 int checkMultiply = 0;
@@ -42,57 +49,52 @@ void submitTask(MatrixMultiplyTask task) {
     pthread_cond_signal(&condQueue);
 }
 
-void mm(int start, int end) {
+void mm(MatrixMultiplyTask tse, MatrixResult mr) {
     int i, j, k;
     double sum;
-    for (i = start; i < end; i++) {
+    for (i = tse.start; i < tse.end; i++) {
+        pthread_mutex_lock(&mutex);
         for (j = 0; j < matrixSize; j++) {
             sum = 0.0;
             for (k = 0; k < matrixSize; k++) {
-                sum = sum + a[i][k] * b[k][j];
+                sum = sum + mr.a[i][k] * mr.b[k][j];
 
             }
-            pthread_mutex_lock(&mutex);
-            c[i][j] = sum;
-            pthread_mutex_unlock(&mutex);
+            mr.c[i][j] = sum;
         }
+        pthread_mutex_unlock(&mutex);
     }
 }
 
 void* startThread(void* args) {
+    pthread_mutex_lock(&mutexQueue);
+    MatrixMultiplyTask tse = taskQueue[taskCount];
+    taskCount++;
+    pthread_mutex_unlock(&mutexQueue);
+    int taskCountResult= 0;
     while (1) {
-        
-        MatrixMultiplyTask task;
-
+        MatrixResult rs ;
         pthread_mutex_lock(&mutexQueue);
-        while (taskCount == 0 && !end) {
-            pthread_cond_wait(&condQueue, &mutexQueue);
-        }
-        if (end) {
+        if(taskCountResult < nmats){
+
+            rs = taskResult[taskCountResult];
+            taskCountResult++;
+        }else{
             pthread_mutex_unlock(&mutexQueue);
             pthread_exit(NULL);
         }
-
-        task = taskQueue[0];
-        int i;
-        for (i = 0; i < taskCount - 1; i++) {
-            taskQueue[i] = taskQueue[i + 1];
-        }
-        taskCount--;
         pthread_mutex_unlock(&mutexQueue);
-        mm(task.start, task.end);
-        pthread_mutex_lock(&mutex);
-        checkMultiply++;
-        pthread_mutex_unlock(&mutex);
+        
+        mm(tse,rs);
 
     }
 }
 
-void printResult(FILE *file) {
+void printResult(FILE *file,MatrixResult m) {
     int i, j;
     for (i = 0; i < matrixSize; i++) {
         for (j = 0; j < matrixSize; j++) {
-            fprintf(file, "%lf ", c[i][j]);
+            fprintf(file, "%lf ", m.c[i][j]);
         }
         fprintf(file, "\n");
     }
@@ -121,6 +123,10 @@ int compareFiles(FILE *file1, FILE *file2) {
     }
 }
 
+void freeMatrix(double **matrix) {
+    free(matrix[0]);  // Free the memory block that contains the matrix values
+    free(matrix);      // Free the array of pointers
+}
 int main(int argc, char *argv[]) {
 
     NUMTHRDS = atoi(argv[1]);
@@ -131,22 +137,29 @@ int main(int argc, char *argv[]) {
     char *fname = "matrices_large.dat"; 
     FILE *fh, *resultFile,*originalFile;
 
-    resultFile = fopen("FG_result.txt", "w"); // Open a file to write the result
+    // resultFile = fopen("FG_result2.txt", "w"); // Open a file to write the result
 	fh = fopen(fname, "r");
 
     // First line indicates how many pairs of matrices there are and the matrix size
     fscanf(fh, "%d %d", &nmats, &matrixSize);
 
     // Dynamically create matrices of the size needed
-	a = allocateMatrix();
-	b = allocateMatrix();
-	c = allocateMatrix();
+
     // Create threads and execute matrix multiplication in parallel
-    for (long t = 0; t < NUMTHRDS; t++) {
-        pthread_create(&threads[t], NULL, startThread, NULL);
-    }
     // Read matrices from file
+
+    int chunk_size = matrixSize / NUMTHRDS;
+    for (long t = 0; t < NUMTHRDS; t++) {
+        MatrixMultiplyTask task = {
+            .start = t * chunk_size,
+            .end = (t == NUMTHRDS - 1) ? matrixSize : (t + 1) * chunk_size
+        };
+        taskQueue[t] = task;
+    }
     for (int k = 0; k < nmats; k++) {
+        double **a = allocateMatrix();
+        double **b = allocateMatrix();
+        double **c = allocateMatrix();
         for (int i = 0; i < matrixSize; i++) {
             for (int j = 0; j < matrixSize; j++) {
                 fscanf(fh, "%lf", &a[i][j]);
@@ -157,39 +170,37 @@ int main(int argc, char *argv[]) {
                 fscanf(fh, "%lf", &b[i][j]);
             }
         }        
+     
         // Split matrix multiplication into tasks and submit to the queue
-        int chunk_size = matrixSize / NUMTHRDS;
-        for (long t = 0; t < NUMTHRDS; t++) {
-            MatrixMultiplyTask task = {
-                .start = t * chunk_size,
-                .end = (t == NUMTHRDS - 1) ? matrixSize : (t + 1) * chunk_size
-            };
-            submitTask(task);
-        }       
-        while (1)
-        {
-            if(checkMultiply == NUMTHRDS){
-                checkMultiply=0;
-                break;
-            }
-        }
-        printResult(resultFile); 
+       
+        MatrixResult cr = {
+            .a=a,
+            .b=b,
+            .c=c
+        };
+        taskResult[k]=cr;
+
+
+       
     }
-    for(int k = 0; k< NUMTHRDS; k++){
-        taskCount = 0;
-        end = 1;
-        pthread_cond_signal(&condQueue);
+
+    for (long t = 0; t < NUMTHRDS; t++) {
+        pthread_create(&threads[t], NULL, startThread, NULL);
     }
+
     
     // Join threads
     for (long t = 0; t < NUMTHRDS; t++) {
         pthread_join(threads[t], NULL);
     }
+    // for(long t = 0; t<nmats;t++){
+    //     printResult(resultFile,taskResult[t]);
+    // }
    // Write result to file
-    fclose(resultFile); // Close the result file
+    // fclose(resultFile); // Close the result file
 
-    // // Check results ---------------------------------
-    // resultFile = fopen("FG_result.txt", "r");
+    // // // Check results ---------------------------------
+    // resultFile = fopen("FG_result2.txt", "r");
     // originalFile = fopen("original_result.txt", "r");
     // if (resultFile == NULL || originalFile == NULL) {
     //     perror("Error al abrir los archivos");
@@ -203,7 +214,7 @@ int main(int argc, char *argv[]) {
     // }
     // fclose(resultFile);
     // fclose(originalFile);
-    // // -----------------------------------------------
+    // -----------------------------------------------
 
     fclose(fh);
 
@@ -212,12 +223,12 @@ int main(int argc, char *argv[]) {
     pthread_cond_destroy(&condQueue);
 
     // Free memory
-    free(*a);
-    free(*b);
-    free(*c); 
-    free(a);
-    free(b);
-    free(c);
+    for (int t = 0; t < nmats; t++) {
+        freeMatrix(taskResult[t].a);
+        freeMatrix(taskResult[t].b);
+        freeMatrix(taskResult[t].c);
+    }
+  
 
     return 0;
 }
